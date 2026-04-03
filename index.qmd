@@ -6,7 +6,7 @@ title: "General Conference Analysis"
 
 This package provides tools for exploring and scraping talks from the Church of Jesus Christ of Latter-day Saints General Conferences. It automates the collection of conference talk data, including speaker information, talk content, and AI-generated embeddings for analysis.
 
-Test this out with our streamlit app [https://gc-analysis.streamlit.app/](here).
+Test this out with our streamlit app [https://gc-analysis.streamlit.app/](https://gc-analysis.streamlit.app/)!
 
 ## Key Features
 
