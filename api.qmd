@@ -1,0 +1,199 @@
+---
+title: "API Reference"
+---
+
+## Overview
+
+The `gc_analysis` package provides a suite of functions for scraping, processing, and analyzing General Conference talks. This page documents the main API functions available in the package.
+
+## Main Functions
+
+### `data_pipeline()`
+
+The primary function for orchestrating the entire data collection and processing workflow.
+
+**Signature:**
+```python
+data_pipeline(years=[2025], months=["04", "10"], save_csv=True, verbose=True)
+```
+
+**Parameters:**
+
+- `years` (list, default: `[2025]`): List of conference years to collect (e.g., `[2024, 2025]`)
+- `months` (list, default: `["04", "10"]`): List of conference months as strings (e.g., `["04", "10"]` for April and October)
+- `save_csv` (bool, default: `True`): Whether to save the processed data to `data/gc_talks.csv`
+- `verbose` (bool, default: `True`): Whether to print progress messages during execution
+
+**Returns:**
+
+- `pd.DataFrame`: A pandas DataFrame containing the collected and processed talks with the following columns:
+  - `title`: Talk title
+  - `author`: Speaker name
+  - `role`: Speaker's position/responsibility (cleaned)
+  - `kicker`: Summary/description of the talk
+  - `text`: Full talk text
+  - `year`: Conference year
+  - `month`: Conference month
+  - `embedding`: Vector embedding of the talk text (as a JSON string in CSV)
+
+**Example:**
+```python
+from gc_analysis.data import data_pipeline
+
+# Collect talks from April and October 2025
+df = data_pipeline(years=[2025], months=["04", "10"])
+```
+
+---
+
+### `grab_gc_talk()`
+
+Scrapes talks from the Church website for a specified year and month.
+
+**Signature:**
+```python
+grab_gc_talk(data_dict, year, month)
+```
+
+**Parameters:**
+
+- `data_dict` (dict): Dictionary to accumulate talk data with keys: `title`, `author`, `role`, `kicker`, `text`, `year`, `month`
+- `year` (int): Conference year (e.g., `2025`)
+- `month` (str): Conference month as a string (e.g., `"04"` for April)
+
+**Returns:**
+
+- `dict`: Updated `data_dict` with new talks appended
+
+**Note:** This function is typically called by `data_pipeline()` and rarely needs to be called directly.
+
+---
+
+### `extract_data()`
+
+Helper function to extract text content from HTML elements using BeautifulSoup.
+
+**Signature:**
+```python
+extract_data(soup, tag, class_name)
+```
+
+**Parameters:**
+
+- `soup` (BeautifulSoup): Parsed HTML document
+- `tag` (str): HTML tag name (e.g., `'h1'`, `'p'`, `'div'`)
+- `class_name` (str or None): CSS class name to filter by, or `None` to search by tag only
+
+**Returns:**
+
+- `str` or `None`: Text content if the element is found, otherwise `None`
+
+**Example:**
+```python
+import requests
+import bs4
+from gc_analysis.data import extract_data
+
+response = requests.get("https://example.com")
+soup = bs4.BeautifulSoup(response.content, "html.parser")
+title = extract_data(soup, 'h1', None)
+```
+
+---
+
+### `clean_data()`
+
+Standardizes speaker roles across the dataset by mapping full role names to abbreviations.
+
+**Signature:**
+```python
+clean_data(df)
+```
+
+**Parameters:**
+
+- `df` (pd.DataFrame): DataFrame with a `role` column containing speaker positions
+
+**Returns:**
+
+- `pd.DataFrame`: DataFrame with cleaned role values
+
+**Role Mappings:**
+
+| Full Name | Abbreviation |
+|-----------|--------------|
+| Relief Society | RS |
+| First Presidency | FP |
+| Apostle | A |
+| Young Women | YW |
+| Young Men | YM |
+| Primary | P |
+| Sunday School | SS |
+| Seventy | 70 |
+| Bishop | B |
+| President of the Church | Prophet |
+| Managing Director | MD |
+| Ward | Member |
+
+**Example:**
+```python
+from gc_analysis.data import clean_data
+import pandas as pd
+
+df = pd.DataFrame({'role': ['Apostle', 'Relief Society', 'Young Men']})
+df_cleaned = clean_data(df)
+# df_cleaned['role'] now contains: ['A', 'RS', 'YM']
+```
+
+---
+
+### `generate_embeddings()`
+
+Generates vector embeddings for talk text using Ollama's embedding model.
+
+**Signature:**
+```python
+generate_embeddings(df)
+```
+
+**Parameters:**
+
+- `df` (pd.DataFrame): DataFrame with a `text` column containing talk content
+
+**Returns:**
+
+- `pd.DataFrame`: DataFrame with a new `embedding` column containing embeddings as JSON strings
+
+**Notes:**
+
+- Requires Ollama to be installed and running
+- Uses the `embeddinggemma` model for generating embeddings
+- Only generates embeddings for non-null text entries
+- Embeddings are stored as JSON strings for CSV compatibility
+
+---
+
+### `load_embeddings_from_csv()`
+
+Loads a CSV file and converts JSON string embeddings back to numpy arrays.
+
+**Signature:**
+```python
+load_embeddings_from_csv(csv_path)
+```
+
+**Parameters:**
+
+- `csv_path` (str): Path to the CSV file containing the talk data
+
+**Returns:**
+
+- `pd.DataFrame`: DataFrame with embeddings converted to numpy arrays; rows with invalid embeddings are removed
+
+**Example:**
+```python
+from gc_analysis.data import load_embeddings_from_csv
+
+df = load_embeddings_from_csv("data/gc_talks.csv")
+# Use embeddings for similarity analysis
+```

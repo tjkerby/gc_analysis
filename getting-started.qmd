@@ -1,0 +1,142 @@
+---
+title: "Getting Started"
+---
+
+## Installation
+
+First, ensure you have the required dependencies installed. The package requires:
+- `requests` - for web scraping
+- `beautifulsoup4` - for HTML parsing
+- `pandas` - for data manipulation
+- `ollama` - for generating embeddings
+- `numpy` - for numerical operations
+
+Install them with:
+```bash
+pip install requests beautifulsoup4 pandas ollama numpy
+```
+
+## Quick Start
+
+### 1. Basic Data Collection
+
+The simplest way to get started is to use the `data_pipeline()` function to collect talks from recent General Conferences:
+
+```python
+from gc_analysis.data import data_pipeline
+
+# Collect talks from April and October 2025
+df = data_pipeline(years=[2025], months=["04", "10"])
+
+# View the first few talks
+print(df.head())
+```
+
+This will:
+1. Scrape all talks from the specified conferences
+2. Extract speaker information and talk content
+3. Clean and standardize the data
+4. Generate embeddings for each talk
+5. Save everything to `data/gc_talks.csv`
+
+### 2. Access Your Data
+
+After running the pipeline, you can work with the collected data:
+
+```python
+from gc_analysis.data import load_embeddings_from_csv
+
+# Load the saved data with embeddings
+df = load_embeddings_from_csv("data/gc_talks.csv")
+
+# Explore the data
+print(f"Total talks: {len(df)}")
+print(f"Unique speakers: {df['author'].nunique()}")
+print(f"Speakers by role:\n{df['role'].value_counts()}")
+```
+
+### 3. Analyze the Data
+
+Now you can perform various analyses on the collected talks:
+
+```python
+# Find talks by a specific speaker
+speaker_talks = df[df['author'] == 'Nelson Russell M.']
+print(f"Talks by Nelson Russell M.: {len(speaker_talks)}")
+
+# Find talks by a specific role
+apostle_talks = df[df['role'] == 'A']
+print(f"Total talks by Apostles: {len(apostle_talks)}")
+
+# View talk information
+for idx, row in df.head(3).iterrows():
+    print(f"\nTitle: {row['title']}")
+    print(f"Speaker: {row['author']} ({row['role']})")
+    print(f"Summary: {row['kicker']}")
+```
+
+### 4. Collect Multiple Years
+
+You can easily expand your dataset to include multiple years:
+
+```python
+# Collect talks from April and October of 2024 and 2025
+df = data_pipeline(years=[2024, 2025], months=["04", "10"], save_csv=True)
+
+# This will take longer due to increased number of talks
+```
+
+## Common Patterns
+
+### Silencing Progress Output
+
+If you want to run the pipeline without verbose output:
+
+```python
+df = data_pipeline(verbose=False)
+```
+
+### Collecting Without Saving CSV
+
+If you only want the data in memory:
+
+```python
+df = data_pipeline(save_csv=False)
+# Data is not saved to CSV, only returned
+```
+
+### Combining Multiple Collections
+
+You can run the pipeline multiple times and combine results:
+
+```python
+import pandas as pd
+
+# First collection
+df1 = data_pipeline(years=[2024], months=["04"], verbose=False)
+
+# Second collection
+df2 = data_pipeline(years=[2024], months=["10"], verbose=False)
+
+# Combine them
+df_combined = pd.concat([df1, df2], ignore_index=True)
+print(f"Total talks collected: {len(df_combined)}")
+```
+
+## Next Steps
+
+- Check out the [API Reference](api.qmd) for detailed function documentation
+- Explore the data interactively in a Jupyter notebook
+- Use embeddings for similarity analysis and clustering
+- Build visualizations of speaker frequency, role distributions, and more
+
+## Troubleshooting
+
+**Issue:** "ollama" module not found
+- **Solution:** Make sure Ollama is installed and running. Install with `pip install ollama` and run the Ollama service.
+
+**Issue:** Web scraping is very slow or times out
+- **Solution:** This is normal for collecting many talks. The script includes progress bars using `tqdm` to track progress. Large collections may take 10-30 minutes.
+
+**Issue:** Embeddings are not being generated
+- **Solution:** Ensure Ollama is running and the `embeddinggemma` model is available. You may need to pull the model with `ollama pull embeddinggemma`.
