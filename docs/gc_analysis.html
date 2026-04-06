@@ -241,7 +241,7 @@ Calculated PHATE in 10.38 seconds.</code></pre>
 <pre><code>Unable to display output for mime type(s): application/vnd.plotly.v1+json</code></pre>
 </div>
 </div>
-<div id="ff835dc4" class="cell">
+<div id="ff835dc4" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>subset_df <span class="op">=</span> subset_df[<span class="op">~</span>subset_df[<span class="st">'title'</span>].<span class="bu">str</span>.contains(<span class="st">"Sustaining of"</span>, case<span class="op">=</span><span class="va">False</span>)]</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>subset_df <span class="op">=</span> subset_df[<span class="op">~</span>subset_df[<span class="st">'title'</span>].<span class="bu">str</span>.contains(<span class="st">"Church Auditing"</span>, case<span class="op">=</span><span class="va">False</span>)]</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>subset_df <span class="op">=</span> subset_df[<span class="op">~</span>subset_df[<span class="st">'title'</span>].<span class="bu">str</span>.contains(<span class="st">"Statistical Report"</span>, case<span class="op">=</span><span class="va">False</span>)]</span>
@@ -270,24 +270,23 @@ Calculated PHATE in 10.38 seconds.</code></pre>
 <span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>fig.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Calculating PHATE...
-  Running PHATE on 1895 observations and 768 variables.
+  Running PHATE on 1877 observations and 768 variables.
   Calculating graph and diffusion operator...
     Calculating PCA...
-    Calculated PCA in 0.72 seconds.
+    Calculated PCA in 0.79 seconds.
     Calculating KNN search...
-    Calculated KNN search in 0.14 seconds.
+    Calculated KNN search in 0.15 seconds.
     Calculating affinities...
-    Calculated affinities in 0.06 seconds.
-  Calculated graph and diffusion operator in 0.93 seconds.
+    Calculated affinities in 0.05 seconds.
+  Calculated graph and diffusion operator in 1.00 seconds.
   Calculating optimal t...
     Automatically selected t = 41
-  Calculated optimal t in 3.41 seconds.
+  Calculated optimal t in 3.77 seconds.
   Calculating diffusion potential...
-  Calculated diffusion potential in 0.52 seconds.
+  Calculated diffusion potential in 0.49 seconds.
   Calculating metric MDS...
-    SGD-MDS may not have converged: stress changed by 1.7% in final iterations. Consider increasing n_iter or adjusting learning_rate.
-  Calculated metric MDS in 2.21 seconds.
-Calculated PHATE in 7.09 seconds.</code></pre>
+  Calculated metric MDS in 2.12 seconds.
+Calculated PHATE in 7.40 seconds.</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <pre><code>Unable to display output for mime type(s): application/vnd.plotly.v1+json</code></pre>

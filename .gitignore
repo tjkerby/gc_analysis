@@ -10,4 +10,7 @@ wheels/
 .venv
 
 /.quarto/
-/docs/site_libs/
+
+# Keep Quarto website assets that GitHub Pages needs to render styling correctly.
+!/docs/site_libs/
+!/docs/site_libs/**
