@@ -11,8 +11,9 @@ website:
       - href: getting-started.qmd
         text: Getting Started
       - href: api.qmd
-        text: API Reference
-      - about.qmd
+        text: Documentation
+      - href: technical-report.qmd
+        text: Technical Report
 
 format:
   html:

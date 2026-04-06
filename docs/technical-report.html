@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>About – General Conference Analysis</title>
+<title>Technical Report – General Conference Analysis</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,6 +19,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -99,11 +134,11 @@ ul.task-list li input[type="checkbox"] {
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./api.html"> 
-<span class="menu-text">API Reference</span></a>
+<span class="menu-text">Documentation</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="./about.html" aria-current="page"> 
-<span class="menu-text">About</span></a>
+    <a class="nav-link active" href="./technical-report.html" aria-current="page"> 
+<span class="menu-text">Technical Report</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -116,15 +151,29 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#purpose" id="toc-purpose" class="nav-link active" data-scroll-target="#purpose">Purpose</a></li>
+  <li><a href="#data-extraction" id="toc-data-extraction" class="nav-link" data-scroll-target="#data-extraction">1. Data Extraction</a></li>
+  <li><a href="#data-structure" id="toc-data-structure" class="nav-link" data-scroll-target="#data-structure">2. Data Structure</a></li>
+  <li><a href="#cleaning-and-standardization" id="toc-cleaning-and-standardization" class="nav-link" data-scroll-target="#cleaning-and-standardization">3. Cleaning And Standardization</a></li>
+  <li><a href="#embedding-generation" id="toc-embedding-generation" class="nav-link" data-scroll-target="#embedding-generation">4. Embedding Generation</a></li>
+  <li><a href="#persisting-the-output" id="toc-persisting-the-output" class="nav-link" data-scroll-target="#persisting-the-output">5. Persisting The Output</a></li>
+  <li><a href="#exploration-workflow" id="toc-exploration-workflow" class="nav-link" data-scroll-target="#exploration-workflow">6. Exploration Workflow</a></li>
+  <li><a href="#reproducibility-notes" id="toc-reproducibility-notes" class="nav-link" data-scroll-target="#reproducibility-notes">7. Reproducibility Notes</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">8. Summary</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">About</h1>
+<h1 class="title">Technical Report</h1>
 </div>
 
 
@@ -141,9 +190,99 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>About this site</p>
+<section id="purpose" class="level2">
+<h2 class="anchored" data-anchor-id="purpose">Purpose</h2>
+<p>This report documents the workflow used to collect, clean, enrich, and explore the General Conference talk dataset. It is intended to make the analysis reproducible by showing the full path from the raw Church website pages to the final CSV and downstream exploration.</p>
+</section>
+<section id="data-extraction" class="level2">
+<h2 class="anchored" data-anchor-id="data-extraction">1. Data Extraction</h2>
+<p>The collection process is implemented in the <code>src/gc_analysis/data.py</code> module. The main entry point is <code>data_pipeline()</code>, which loops over the requested years and conference months and calls <code>grab_gc_talk()</code> for each pair.</p>
+<p>The extraction step follows this sequence:</p>
+<ol type="1">
+<li>Request the General Conference index page for a specific year and month.</li>
+<li>Parse the HTML with BeautifulSoup.</li>
+<li>Locate each talk link on the conference page.</li>
+<li>Visit each talk page individually.</li>
+<li>Extract the title, speaker, role, kicker, and body text.</li>
+</ol>
+<p>The collected fields are stored in a dictionary first and then converted into a pandas DataFrame. That approach keeps the extraction logic simple and makes the output easy to inspect before later processing.</p>
+</section>
+<section id="data-structure" class="level2">
+<h2 class="anchored" data-anchor-id="data-structure">2. Data Structure</h2>
+<p>The raw dataset produced by the pipeline contains these columns:</p>
+<ul>
+<li><code>title</code></li>
+<li><code>author</code></li>
+<li><code>role</code></li>
+<li><code>kicker</code></li>
+<li><code>text</code></li>
+<li><code>year</code></li>
+<li><code>month</code></li>
+</ul>
+<p>After embeddings are generated, an additional <code>embedding</code> column is added.</p>
+<p>This structure is important because it separates what was scraped from what was derived later. Anyone rerunning the pipeline can compare the raw text fields against cleaned or embedded versions without guessing how the data changed.</p>
+</section>
+<section id="cleaning-and-standardization" class="level2">
+<h2 class="anchored" data-anchor-id="cleaning-and-standardization">3. Cleaning And Standardization</h2>
+<p>Once the talks are collected, <code>clean_data()</code> standardizes the <code>role</code> field. The source pages use full role names, but the analysis uses compact labels such as <code>A</code> for Apostle and <code>RS</code> for Relief Society.</p>
+<p>This step reduces variation in the dataset and makes grouping, counting, and plotting more reliable. It also keeps role-based summaries readable when exploring the collection.</p>
+</section>
+<section id="embedding-generation" class="level2">
+<h2 class="anchored" data-anchor-id="embedding-generation">4. Embedding Generation</h2>
+<p>The next step is semantic enrichment. <code>generate_embeddings()</code> sends each non-null talk text value to Ollama using the <code>embeddinggemma</code> model and stores the returned vector as a JSON string.</p>
+<p>Why this matters:</p>
+<ul>
+<li>It makes similarity analysis possible.</li>
+<li>It supports clustering and search-style exploration.</li>
+<li>It preserves the vectors in CSV form so the dataset can be reloaded without recomputing everything immediately.</li>
+</ul>
+<p>The embeddings are saved as text for compatibility with CSV storage, and <code>load_embeddings_from_csv()</code> later converts them back into numeric arrays.</p>
+</section>
+<section id="persisting-the-output" class="level2">
+<h2 class="anchored" data-anchor-id="persisting-the-output">5. Persisting The Output</h2>
+<p>When <code>save_csv=True</code>, the pipeline writes the final dataset to <code>data/gc_talks.csv</code>. That file becomes the reproducible artifact for the rest of the project.</p>
+<p>To recreate the dataset, rerun the pipeline with the same <code>years</code> and <code>months</code> arguments. The defaults collect April and October 2025, but the inputs can be changed to reproduce the exact slice used in any analysis.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gc_analysis.data <span class="im">import</span> data_pipeline</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> data_pipeline(years<span class="op">=</span>[<span class="dv">2025</span>], months<span class="op">=</span>[<span class="st">"04"</span>, <span class="st">"10"</span>], save_csv<span class="op">=</span><span class="va">True</span>, verbose<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="exploration-workflow" class="level2">
+<h2 class="anchored" data-anchor-id="exploration-workflow">6. Exploration Workflow</h2>
+<p>After the CSV is created, the dataset can be explored with pandas or any downstream notebook or app. A typical exploration sequence is:</p>
+<ol type="1">
+<li>Load the CSV with <code>load_embeddings_from_csv()</code>.</li>
+<li>Check dataset size, unique speakers, and role counts.</li>
+<li>Review talk titles, summaries, and speakers for quality control.</li>
+<li>Filter by year, month, author, or role.</li>
+<li>Use embeddings for similarity search or broader thematic exploration.</li>
+</ol>
+<p>Example exploration code:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gc_analysis.data <span class="im">import</span> load_embeddings_from_csv</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> load_embeddings_from_csv(<span class="st">"data/gc_talks.csv"</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">len</span>(df))</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df[<span class="st">"role"</span>].value_counts())</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df[[<span class="st">"title"</span>, <span class="st">"author"</span>, <span class="st">"role"</span>]].head())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="reproducibility-notes" class="level2">
+<h2 class="anchored" data-anchor-id="reproducibility-notes">7. Reproducibility Notes</h2>
+<p>To reproduce the analysis reliably, the following assumptions should be kept consistent:</p>
+<ul>
+<li>The same source site structure is available on the Church website.</li>
+<li>Ollama is installed and running locally.</li>
+<li>The <code>embeddinggemma</code> model is available.</li>
+<li>The same year and month inputs are used when calling the pipeline.</li>
+</ul>
+<p>If any of those inputs change, the resulting dataset may differ. The pipeline is intentionally explicit about these dependencies so future runs can be traced back to the original extraction and enrichment steps.</p>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">8. Summary</h2>
+<p>The project workflow is straightforward: scrape the talks, standardize the metadata, generate embeddings, save the dataset, and then explore the result from a reproducible CSV. This page is the narrative record of that process.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

@@ -1,31 +1,73 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "General Conference Analysis",
+    "objectID": "technical-report.html",
+    "href": "technical-report.html",
+    "title": "Technical Report",
     "section": "",
-    "text": "This package provides tools for exploring and scraping talks from the Church of Jesus Christ of Latter-day Saints General Conferences. It automates the collection of conference talk data, including speaker information, talk content, and AI-generated embeddings for analysis.\nTest this out with our streamlit app here!"
+    "text": "This report documents the workflow used to collect, clean, enrich, and explore the General Conference talk dataset. It is intended to make the analysis reproducible by showing the full path from the raw Church website pages to the final CSV and downstream exploration."
   },
   {
-    "objectID": "index.html#overview",
-    "href": "index.html#overview",
-    "title": "General Conference Analysis",
+    "objectID": "technical-report.html#purpose",
+    "href": "technical-report.html#purpose",
+    "title": "Technical Report",
     "section": "",
-    "text": "This package provides tools for exploring and scraping talks from the Church of Jesus Christ of Latter-day Saints General Conferences. It automates the collection of conference talk data, including speaker information, talk content, and AI-generated embeddings for analysis.\nTest this out with our streamlit app here!"
+    "text": "This report documents the workflow used to collect, clean, enrich, and explore the General Conference talk dataset. It is intended to make the analysis reproducible by showing the full path from the raw Church website pages to the final CSV and downstream exploration."
   },
   {
-    "objectID": "index.html#key-features",
-    "href": "index.html#key-features",
-    "title": "General Conference Analysis",
-    "section": "Key Features",
-    "text": "Key Features\n\nWeb Scraping: Automatically downloads talks from the official church website for specified conferences and years\nData Extraction: Extracts structured information including:\n\nTalk title and full text\nSpeaker name and role\nTalk summary (kicker text)\nConference date\n\nData Cleaning: Standardizes speaker roles across the dataset (e.g., “Apostle” → “A”, “Relief Society” → “RS”)\nEmbeddings Generation: Creates AI-powered embeddings of talk content using Ollama for similarity analysis and exploration\nCSV Export: Saves processed data to a structured CSV file for easy analysis"
+    "objectID": "technical-report.html#data-extraction",
+    "href": "technical-report.html#data-extraction",
+    "title": "Technical Report",
+    "section": "1. Data Extraction",
+    "text": "1. Data Extraction\nThe collection process is implemented in the src/gc_analysis/data.py module. The main entry point is data_pipeline(), which loops over the requested years and conference months and calls grab_gc_talk() for each pair.\nThe extraction step follows this sequence:\n\nRequest the General Conference index page for a specific year and month.\nParse the HTML with BeautifulSoup.\nLocate each talk link on the conference page.\nVisit each talk page individually.\nExtract the title, speaker, role, kicker, and body text.\n\nThe collected fields are stored in a dictionary first and then converted into a pandas DataFrame. That approach keeps the extraction logic simple and makes the output easy to inspect before later processing."
   },
   {
-    "objectID": "index.html#main-pipeline",
-    "href": "index.html#main-pipeline",
-    "title": "General Conference Analysis",
-    "section": "Main Pipeline",
-    "text": "Main Pipeline\nThe data_pipeline() function in src/gc_analysis/data.py orchestrates the entire workflow:\n\nScrapes talks for specified years and conference months\nExtracts relevant metadata and content from each talk\nCleans and standardizes the data\nGenerates vector embeddings for the talk text\nExports results to CSV format\n\nYou can customize the pipeline by specifying years, months, and output preferences."
+    "objectID": "technical-report.html#data-structure",
+    "href": "technical-report.html#data-structure",
+    "title": "Technical Report",
+    "section": "2. Data Structure",
+    "text": "2. Data Structure\nThe raw dataset produced by the pipeline contains these columns:\n\ntitle\nauthor\nrole\nkicker\ntext\nyear\nmonth\n\nAfter embeddings are generated, an additional embedding column is added.\nThis structure is important because it separates what was scraped from what was derived later. Anyone rerunning the pipeline can compare the raw text fields against cleaned or embedded versions without guessing how the data changed."
+  },
+  {
+    "objectID": "technical-report.html#cleaning-and-standardization",
+    "href": "technical-report.html#cleaning-and-standardization",
+    "title": "Technical Report",
+    "section": "3. Cleaning And Standardization",
+    "text": "3. Cleaning And Standardization\nOnce the talks are collected, clean_data() standardizes the role field. The source pages use full role names, but the analysis uses compact labels such as A for Apostle and RS for Relief Society.\nThis step reduces variation in the dataset and makes grouping, counting, and plotting more reliable. It also keeps role-based summaries readable when exploring the collection."
+  },
+  {
+    "objectID": "technical-report.html#embedding-generation",
+    "href": "technical-report.html#embedding-generation",
+    "title": "Technical Report",
+    "section": "4. Embedding Generation",
+    "text": "4. Embedding Generation\nThe next step is semantic enrichment. generate_embeddings() sends each non-null talk text value to Ollama using the embeddinggemma model and stores the returned vector as a JSON string.\nWhy this matters:\n\nIt makes similarity analysis possible.\nIt supports clustering and search-style exploration.\nIt preserves the vectors in CSV form so the dataset can be reloaded without recomputing everything immediately.\n\nThe embeddings are saved as text for compatibility with CSV storage, and load_embeddings_from_csv() later converts them back into numeric arrays."
+  },
+  {
+    "objectID": "technical-report.html#persisting-the-output",
+    "href": "technical-report.html#persisting-the-output",
+    "title": "Technical Report",
+    "section": "5. Persisting The Output",
+    "text": "5. Persisting The Output\nWhen save_csv=True, the pipeline writes the final dataset to data/gc_talks.csv. That file becomes the reproducible artifact for the rest of the project.\nTo recreate the dataset, rerun the pipeline with the same years and months arguments. The defaults collect April and October 2025, but the inputs can be changed to reproduce the exact slice used in any analysis.\nExample:\nfrom gc_analysis.data import data_pipeline\n\ndf = data_pipeline(years=[2025], months=[\"04\", \"10\"], save_csv=True, verbose=True)"
+  },
+  {
+    "objectID": "technical-report.html#exploration-workflow",
+    "href": "technical-report.html#exploration-workflow",
+    "title": "Technical Report",
+    "section": "6. Exploration Workflow",
+    "text": "6. Exploration Workflow\nAfter the CSV is created, the dataset can be explored with pandas or any downstream notebook or app. A typical exploration sequence is:\n\nLoad the CSV with load_embeddings_from_csv().\nCheck dataset size, unique speakers, and role counts.\nReview talk titles, summaries, and speakers for quality control.\nFilter by year, month, author, or role.\nUse embeddings for similarity search or broader thematic exploration.\n\nExample exploration code:\nfrom gc_analysis.data import load_embeddings_from_csv\n\ndf = load_embeddings_from_csv(\"data/gc_talks.csv\")\n\nprint(len(df))\nprint(df[\"role\"].value_counts())\nprint(df[[\"title\", \"author\", \"role\"]].head())"
+  },
+  {
+    "objectID": "technical-report.html#reproducibility-notes",
+    "href": "technical-report.html#reproducibility-notes",
+    "title": "Technical Report",
+    "section": "7. Reproducibility Notes",
+    "text": "7. Reproducibility Notes\nTo reproduce the analysis reliably, the following assumptions should be kept consistent:\n\nThe same source site structure is available on the Church website.\nOllama is installed and running locally.\nThe embeddinggemma model is available.\nThe same year and month inputs are used when calling the pipeline.\n\nIf any of those inputs change, the resulting dataset may differ. The pipeline is intentionally explicit about these dependencies so future runs can be traced back to the original extraction and enrichment steps."
+  },
+  {
+    "objectID": "technical-report.html#summary",
+    "href": "technical-report.html#summary",
+    "title": "Technical Report",
+    "section": "8. Summary",
+    "text": "8. Summary\nThe project workflow is straightforward: scrape the talks, standardize the metadata, generate embeddings, save the dataset, and then explore the result from a reproducible CSV. This page is the narrative record of that process."
   },
   {
     "objectID": "getting-started.html",
@@ -60,7 +102,7 @@
     "href": "getting-started.html#next-steps",
     "title": "Getting Started",
     "section": "Next Steps",
-    "text": "Next Steps\n\nCheck out the API Reference for detailed function documentation\nExplore the data interactively in a Jupyter notebook\nUse embeddings for similarity analysis and clustering\nBuild visualizations of speaker frequency, role distributions, and more"
+    "text": "Next Steps\n\nCheck out the Documentation for detailed function documentation\nExplore the data interactively in a Jupyter notebook\nUse embeddings for similarity analysis and clustering\nBuild visualizations of speaker frequency, role distributions, and more"
   },
   {
     "objectID": "getting-started.html#troubleshooting",
@@ -72,21 +114,21 @@
   {
     "objectID": "api.html",
     "href": "api.html",
-    "title": "API Reference",
+    "title": "Documentation",
     "section": "",
-    "text": "The gc_analysis package provides a suite of functions for scraping, processing, and analyzing General Conference talks. This page documents the main API functions available in the package."
+    "text": "The gc_analysis package provides a suite of functions for scraping, processing, and analyzing General Conference talks. This page documents the main functions available in the package."
   },
   {
     "objectID": "api.html#overview",
     "href": "api.html#overview",
-    "title": "API Reference",
+    "title": "Documentation",
     "section": "",
-    "text": "The gc_analysis package provides a suite of functions for scraping, processing, and analyzing General Conference talks. This page documents the main API functions available in the package."
+    "text": "The gc_analysis package provides a suite of functions for scraping, processing, and analyzing General Conference talks. This page documents the main functions available in the package."
   },
   {
     "objectID": "api.html#main-functions",
     "href": "api.html#main-functions",
-    "title": "API Reference",
+    "title": "Documentation",
     "section": "Main Functions",
     "text": "Main Functions\n\ndata_pipeline()\nThe primary function for orchestrating the entire data collection and processing workflow.\nSignature:\ndata_pipeline(years=[2025], months=[\"04\", \"10\"], save_csv=True, verbose=True)\nParameters:\n\nyears (list, default: [2025]): List of conference years to collect (e.g., [2024, 2025])\nmonths (list, default: [\"04\", \"10\"]): List of conference months as strings (e.g., [\"04\", \"10\"] for April and October)\nsave_csv (bool, default: True): Whether to save the processed data to data/gc_talks.csv\nverbose (bool, default: True): Whether to print progress messages during execution\n\nReturns:\n\npd.DataFrame: A pandas DataFrame containing the collected and processed talks with the following columns:\n\ntitle: Talk title\nauthor: Speaker name\nrole: Speaker’s position/responsibility (cleaned)\nkicker: Summary/description of the talk\ntext: Full talk text\nyear: Conference year\nmonth: Conference month\nembedding: Vector embedding of the talk text (as a JSON string in CSV)\n\n\nExample:\nfrom gc_analysis.data import data_pipeline\n\n# Collect talks from April and October 2025\ndf = data_pipeline(years=[2025], months=[\"04\", \"10\"])\n\n\n\ngrab_gc_talk()\nScrapes talks from the Church website for a specified year and month.\nSignature:\ngrab_gc_talk(data_dict, year, month)\nParameters:\n\ndata_dict (dict): Dictionary to accumulate talk data with keys: title, author, role, kicker, text, year, month\nyear (int): Conference year (e.g., 2025)\nmonth (str): Conference month as a string (e.g., \"04\" for April)\n\nReturns:\n\ndict: Updated data_dict with new talks appended\n\nNote: This function is typically called by data_pipeline() and rarely needs to be called directly.\n\n\n\nextract_data()\nHelper function to extract text content from HTML elements using BeautifulSoup.\nSignature:\nextract_data(soup, tag, class_name)\nParameters:\n\nsoup (BeautifulSoup): Parsed HTML document\ntag (str): HTML tag name (e.g., 'h1', 'p', 'div')\nclass_name (str or None): CSS class name to filter by, or None to search by tag only\n\nReturns:\n\nstr or None: Text content if the element is found, otherwise None\n\nExample:\nimport requests\nimport bs4\nfrom gc_analysis.data import extract_data\n\nresponse = requests.get(\"https://example.com\")\nsoup = bs4.BeautifulSoup(response.content, \"html.parser\")\ntitle = extract_data(soup, 'h1', None)\n\n\n\nclean_data()\nStandardizes speaker roles across the dataset by mapping full role names to abbreviations.\nSignature:\nclean_data(df)\nParameters:\n\ndf (pd.DataFrame): DataFrame with a role column containing speaker positions\n\nReturns:\n\npd.DataFrame: DataFrame with cleaned role values\n\nRole Mappings:\n\n\n\nFull Name\nAbbreviation\n\n\n\n\nRelief Society\nRS\n\n\nFirst Presidency\nFP\n\n\nApostle\nA\n\n\nYoung Women\nYW\n\n\nYoung Men\nYM\n\n\nPrimary\nP\n\n\nSunday School\nSS\n\n\nSeventy\n70\n\n\nBishop\nB\n\n\nPresident of the Church\nProphet\n\n\nManaging Director\nMD\n\n\nWard\nMember\n\n\n\nExample:\nfrom gc_analysis.data import clean_data\nimport pandas as pd\n\ndf = pd.DataFrame({'role': ['Apostle', 'Relief Society', 'Young Men']})\ndf_cleaned = clean_data(df)\n# df_cleaned['role'] now contains: ['A', 'RS', 'YM']\n\n\n\ngenerate_embeddings()\nGenerates vector embeddings for talk text using Ollama’s embedding model.\nSignature:\ngenerate_embeddings(df)\nParameters:\n\ndf (pd.DataFrame): DataFrame with a text column containing talk content\n\nReturns:\n\npd.DataFrame: DataFrame with a new embedding column containing embeddings as JSON strings\n\nNotes:\n\nRequires Ollama to be installed and running\nUses the embeddinggemma model for generating embeddings\nOnly generates embeddings for non-null text entries\nEmbeddings are stored as JSON strings for CSV compatibility\n\n\n\n\nload_embeddings_from_csv()\nLoads a CSV file and converts JSON string embeddings back to numpy arrays.\nSignature:\nload_embeddings_from_csv(csv_path)\nParameters:\n\ncsv_path (str): Path to the CSV file containing the talk data\n\nReturns:\n\npd.DataFrame: DataFrame with embeddings converted to numpy arrays; rows with invalid embeddings are removed\n\nExample:\nfrom gc_analysis.data import load_embeddings_from_csv\n\ndf = load_embeddings_from_csv(\"data/gc_talks.csv\")\n# Use embeddings for similarity analysis"
   },
@@ -98,10 +140,31 @@
     "text": "import pandas as pd\nimport numpy as np\n\nimport phate\nimport plotly.express as px\n\n\nfrom gc_analysis.data import data_pipeline, load_embeddings_from_csv\n\ntry:\n    # Load existing CSV and auto-parse embeddings from JSON strings\n    df = load_embeddings_from_csv(\"./data/gc_talks.csv\")\n    print(f\"Loaded {len(df)} talks with embeddings from CSV\")\nexcept FileNotFoundError:\n    # Generate new data if CSV doesn't exist\n    print(\"CSV not found, generating new data...\")\n    df = data_pipeline(years=list(range(2018, 2026)), months=[\"04\", \"10\"])\n    # Reload to ensure embeddings are properly converted\n    df = load_embeddings_from_csv(\"./data/gc_talks.csv\")\n\nc:\\Users\\tkerby2\\Desktop\\Teaching\\Winter_2026\\STAT_386\\testing_program\\gc_analysis\\.venv\\Lib\\site-packages\\tqdm\\auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html\n  from .autonotebook import tqdm as notebook_tqdm\n\n\nLoaded 1972 talks with embeddings from CSV\n\n\n\nsubset_df = df[df['text'].notnull()]\n\nphate_op = phate.PHATE(n_components=2)                    # Create PHATE reducer for 2D output\nembeddings = np.stack(subset_df['embedding'].values)             # Stack all embeddings into a matrix\nphate_result = phate_op.fit_transform(embeddings)         # Apply PHATE to get 2D coordinates\n\n# Step 2: Create an interactive scatter plot\nfig = px.scatter(\n    x=phate_result[:, 0],                                 # X-axis: first PHATE dimension\n    y=phate_result[:, 1],                                 # Y-axis: second PHATE dimension\n    color=subset_df[\"role\"],                                     # Color points by conference year\n    hover_name=subset_df[\"title\"],                               # Show talk title on hover\n    hover_data={                                          # Additional info to show on hover\n        \"author\": subset_df[\"author\"],\n        \"role\": subset_df[\"role\"],\n        \"year\": subset_df[\"year\"],\n        \"month\": subset_df[\"month\"]\n    },\n)\n\n# Display the interactive visualization\nfig.show()\n\nCalculating PHATE...\n  Running PHATE on 1972 observations and 768 variables.\n  Calculating graph and diffusion operator...\n    Calculating PCA...\n    Calculated PCA in 1.08 seconds.\n    Calculating KNN search...\n    Calculated KNN search in 1.97 seconds.\n    Calculating affinities...\n    Calculated affinities in 0.05 seconds.\n  Calculated graph and diffusion operator in 3.11 seconds.\n  Calculating optimal t...\n\n\nc:\\Users\\tkerby2\\Desktop\\Teaching\\Winter_2026\\STAT_386\\testing_program\\gc_analysis\\.venv\\Lib\\site-packages\\phate\\phate.py:919: RuntimeWarning: Graph is disconnected with 4 connected components. This may indicate that your knn parameter (currently 5) is too small, or that your data contains distinct clusters. PHATE may not accurately represent relationships between disconnected components.\n  warnings.warn(\n\n\n    Automatically selected t = 18\n  Calculated optimal t in 4.94 seconds.\n  Calculating diffusion potential...\n  Calculated diffusion potential in 0.38 seconds.\n  Calculating metric MDS...\n  Calculated metric MDS in 1.93 seconds.\nCalculated PHATE in 10.38 seconds.\n\n\nUnable to display output for mime type(s): application/vnd.plotly.v1+json\n\n\n\nsubset_df = subset_df[~subset_df['title'].str.contains(\"Sustaining of\", case=False)]\nsubset_df = subset_df[~subset_df['title'].str.contains(\"Church Auditing\", case=False)]\nsubset_df = subset_df[~subset_df['title'].str.contains(\"Statistical Report\", case=False)]\nsubset_df = subset_df[~subset_df['role'].str.contains(\"Ward\", case=False)]\n\n# Step 1: Apply PHATE dimensionality reduction to convert high-dimensional embeddings to 2D\nphate_op = phate.PHATE(n_components=2)                    # Create PHATE reducer for 2D output\nembeddings = np.stack(subset_df['embedding'].values)             # Stack all embeddings into a matrix\nphate_result = phate_op.fit_transform(embeddings)         # Apply PHATE to get 2D coordinates\n\n# Step 2: Create an interactive scatter plot\nfig = px.scatter(\n    x=phate_result[:, 0],                                 # X-axis: first PHATE dimension\n    y=phate_result[:, 1],                                 # Y-axis: second PHATE dimension\n    color=subset_df[\"role\"],                                     # Color points by conference year\n    hover_name=subset_df[\"title\"],                               # Show talk title on hover\n    hover_data={                                          # Additional info to show on hover\n        \"author\": subset_df[\"author\"],\n        \"role\": subset_df[\"role\"],\n        \"year\": subset_df[\"year\"],\n        \"month\": subset_df[\"month\"]\n    },\n)\n\n# Display the interactive visualization\nfig.show()\n\nCalculating PHATE...\n  Running PHATE on 1877 observations and 768 variables.\n  Calculating graph and diffusion operator...\n    Calculating PCA...\n    Calculated PCA in 0.79 seconds.\n    Calculating KNN search...\n    Calculated KNN search in 0.15 seconds.\n    Calculating affinities...\n    Calculated affinities in 0.05 seconds.\n  Calculated graph and diffusion operator in 1.00 seconds.\n  Calculating optimal t...\n    Automatically selected t = 41\n  Calculated optimal t in 3.77 seconds.\n  Calculating diffusion potential...\n  Calculated diffusion potential in 0.49 seconds.\n  Calculating metric MDS...\n  Calculated metric MDS in 2.12 seconds.\nCalculated PHATE in 7.40 seconds.\n\n\nUnable to display output for mime type(s): application/vnd.plotly.v1+json"
   },
   {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About",
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "General Conference Analysis",
     "section": "",
-    "text": "About this site"
+    "text": "This package provides tools for exploring and scraping talks from the Church of Jesus Christ of Latter-day Saints General Conferences. It automates the collection of conference talk data, including speaker information, talk content, and AI-generated embeddings for analysis.\nTest this out with our streamlit app here!"
+  },
+  {
+    "objectID": "index.html#overview",
+    "href": "index.html#overview",
+    "title": "General Conference Analysis",
+    "section": "",
+    "text": "This package provides tools for exploring and scraping talks from the Church of Jesus Christ of Latter-day Saints General Conferences. It automates the collection of conference talk data, including speaker information, talk content, and AI-generated embeddings for analysis.\nTest this out with our streamlit app here!"
+  },
+  {
+    "objectID": "index.html#key-features",
+    "href": "index.html#key-features",
+    "title": "General Conference Analysis",
+    "section": "Key Features",
+    "text": "Key Features\n\nWeb Scraping: Automatically downloads talks from the official church website for specified conferences and years\nData Extraction: Extracts structured information including:\n\nTalk title and full text\nSpeaker name and role\nTalk summary (kicker text)\nConference date\n\nData Cleaning: Standardizes speaker roles across the dataset (e.g., “Apostle” → “A”, “Relief Society” → “RS”)\nEmbeddings Generation: Creates AI-powered embeddings of talk content using Ollama for similarity analysis and exploration\nCSV Export: Saves processed data to a structured CSV file for easy analysis"
+  },
+  {
+    "objectID": "index.html#main-pipeline",
+    "href": "index.html#main-pipeline",
+    "title": "General Conference Analysis",
+    "section": "Main Pipeline",
+    "text": "Main Pipeline\nThe data_pipeline() function in src/gc_analysis/data.py orchestrates the entire workflow:\n\nScrapes talks for specified years and conference months\nExtracts relevant metadata and content from each talk\nCleans and standardizes the data\nGenerates vector embeddings for the talk text\nExports results to CSV format\n\nYou can customize the pipeline by specifying years, months, and output preferences."
   }
 ]

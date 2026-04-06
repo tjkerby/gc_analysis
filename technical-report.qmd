@@ -1,0 +1,106 @@
+---
+title: "Technical Report"
+---
+
+## Purpose
+
+This report documents the workflow used to collect, clean, enrich, and explore the General Conference talk dataset. It is intended to make the analysis reproducible by showing the full path from the raw Church website pages to the final CSV and downstream exploration.
+
+## 1. Data Extraction
+
+The collection process is implemented in the `src/gc_analysis/data.py` module. The main entry point is `data_pipeline()`, which loops over the requested years and conference months and calls `grab_gc_talk()` for each pair.
+
+The extraction step follows this sequence:
+
+1. Request the General Conference index page for a specific year and month.
+2. Parse the HTML with BeautifulSoup.
+3. Locate each talk link on the conference page.
+4. Visit each talk page individually.
+5. Extract the title, speaker, role, kicker, and body text.
+
+The collected fields are stored in a dictionary first and then converted into a pandas DataFrame. That approach keeps the extraction logic simple and makes the output easy to inspect before later processing.
+
+## 2. Data Structure
+
+The raw dataset produced by the pipeline contains these columns:
+
+- `title`
+- `author`
+- `role`
+- `kicker`
+- `text`
+- `year`
+- `month`
+
+After embeddings are generated, an additional `embedding` column is added.
+
+This structure is important because it separates what was scraped from what was derived later. Anyone rerunning the pipeline can compare the raw text fields against cleaned or embedded versions without guessing how the data changed.
+
+## 3. Cleaning And Standardization
+
+Once the talks are collected, `clean_data()` standardizes the `role` field. The source pages use full role names, but the analysis uses compact labels such as `A` for Apostle and `RS` for Relief Society.
+
+This step reduces variation in the dataset and makes grouping, counting, and plotting more reliable. It also keeps role-based summaries readable when exploring the collection.
+
+## 4. Embedding Generation
+
+The next step is semantic enrichment. `generate_embeddings()` sends each non-null talk text value to Ollama using the `embeddinggemma` model and stores the returned vector as a JSON string.
+
+Why this matters:
+
+- It makes similarity analysis possible.
+- It supports clustering and search-style exploration.
+- It preserves the vectors in CSV form so the dataset can be reloaded without recomputing everything immediately.
+
+The embeddings are saved as text for compatibility with CSV storage, and `load_embeddings_from_csv()` later converts them back into numeric arrays.
+
+## 5. Persisting The Output
+
+When `save_csv=True`, the pipeline writes the final dataset to `data/gc_talks.csv`. That file becomes the reproducible artifact for the rest of the project.
+
+To recreate the dataset, rerun the pipeline with the same `years` and `months` arguments. The defaults collect April and October 2025, but the inputs can be changed to reproduce the exact slice used in any analysis.
+
+Example:
+
+```python
+from gc_analysis.data import data_pipeline
+
+df = data_pipeline(years=[2025], months=["04", "10"], save_csv=True, verbose=True)
+```
+
+## 6. Exploration Workflow
+
+After the CSV is created, the dataset can be explored with pandas or any downstream notebook or app. A typical exploration sequence is:
+
+1. Load the CSV with `load_embeddings_from_csv()`.
+2. Check dataset size, unique speakers, and role counts.
+3. Review talk titles, summaries, and speakers for quality control.
+4. Filter by year, month, author, or role.
+5. Use embeddings for similarity search or broader thematic exploration.
+
+Example exploration code:
+
+```python
+from gc_analysis.data import load_embeddings_from_csv
+
+df = load_embeddings_from_csv("data/gc_talks.csv")
+
+print(len(df))
+print(df["role"].value_counts())
+print(df[["title", "author", "role"]].head())
+```
+
+## 7. Reproducibility Notes
+
+To reproduce the analysis reliably, the following assumptions should be kept consistent:
+
+- The same source site structure is available on the Church website.
+- Ollama is installed and running locally.
+- The `embeddinggemma` model is available.
+- The same year and month inputs are used when calling the pipeline.
+
+If any of those inputs change, the resulting dataset may differ. The pipeline is intentionally explicit about these dependencies so future runs can be traced back to the original extraction and enrichment steps.
+
+## 8. Summary
+
+The project workflow is straightforward: scrape the talks, standardize the metadata, generate embeddings, save the dataset, and then explore the result from a reproducible CSV. This page is the narrative record of that process.

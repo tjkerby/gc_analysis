@@ -1,10 +1,10 @@
 ---
-title: "API Reference"
+title: "Documentation"
 ---
 
 ## Overview
 
-The `gc_analysis` package provides a suite of functions for scraping, processing, and analyzing General Conference talks. This page documents the main API functions available in the package.
+The `gc_analysis` package provides a suite of functions for scraping, processing, and analyzing General Conference talks. This page documents the main functions available in the package.
 
 ## Main Functions
 

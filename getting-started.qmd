@@ -125,7 +125,7 @@ print(f"Total talks collected: {len(df_combined)}")
 
 ## Next Steps
 
-- Check out the [API Reference](api.qmd) for detailed function documentation
+- Check out the [Documentation](api.qmd) for detailed function documentation
 - Explore the data interactively in a Jupyter notebook
 - Use embeddings for similarity analysis and clustering
 - Build visualizations of speaker frequency, role distributions, and more
